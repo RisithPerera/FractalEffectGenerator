@@ -1,76 +1,110 @@
 package sample;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.event.ActionEvent;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Mandelbrot {
 
-    Timeline timer;
-
-    private static  int SCREEN_SIZE = 800;
-    private static final double FRACTAL_SCALE = 0.7;
+    private static final int SCREEN_HEIGHT = 800;
+    private static final int SCREEN_WIDTH = 800;
+    private static final double FRACTAL_SCALE = 1;
     private static int count;
+    private BufferedImage bufferedImage;
 
     private ArrayList<Complex> complexes = new ArrayList<>();
     private int iterator = 0;
 
     public Mandelbrot(Stage stage) {
-        StackPane pane = new StackPane();
-        Canvas canvas = new Canvas(SCREEN_SIZE,SCREEN_SIZE);
 
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+        StackPane root = new StackPane();
 
-        pane.getChildren().add(canvas);
-        pane.setStyle("-fx-background-color: black");
-        Scene scene = new Scene(pane);
+        Scene scene = new Scene(root);
+        stage.setTitle("Fractal Effect Generator");
         stage.setScene(scene);
         stage.show();
 
-        for(int i=0;i<=SCREEN_SIZE;i++){
-            for(int j=0;j<=SCREEN_SIZE;j++){
-                double x = ((double) j/SCREEN_SIZE)-FRACTAL_SCALE/2;
-                double y = ((double) i/SCREEN_SIZE)-FRACTAL_SCALE/2;
-                complexes.add(new Complex(x,y));
+        root.setStyle("-fx-background-color: black");
+        root.getChildren().add(new ImageView(createImage()));
+
+        /*
+
+        //Map the pixel point to complex plain
+        for (int i = 0; i <= SCREEN_HEIGHT; i++) {
+            for (int j = 0; j <= SCREEN_WIDTH; j++) {
+                double x = ((double) j / SCREEN_WIDTH) - FRACTAL_SCALE / 2;
+                double y = ((double) i / SCREEN_HEIGHT) - FRACTAL_SCALE / 2;
+                complexes.add(new Complex(x, y));
             }
         }
 
-        timer = new Timeline(new KeyFrame(Duration.millis(0.1), (ActionEvent event) -> {
-            if(iterator++ < SCREEN_SIZE*SCREEN_SIZE){
-                Complex c = complexes.get(iterator);
-                double x = (c.getReal()+FRACTAL_SCALE/2)*SCREEN_SIZE;
-                double y = (c.getImag()+FRACTAL_SCALE/2)*SCREEN_SIZE;
-                if(isMandelbrot(c)){
-                    gc.setFill(Color.BLUE);
-                }else{
-                    double code = Math.abs(count/1000.0);
-                    gc.setFill(new Color(code,code,code,1));
-                }
-                gc.fillOval(x, y,2,2);
-            }else{
-                System.out.println("stoped");
-                timer.stop();
+
+        if (iterator++ < SCREEN_HEIGHT * SCREEN_WIDTH) {
+            Complex c = complexes.get(iterator);
+            double x = (c.getReal() + FRACTAL_SCALE / 2) * SCREEN_WIDTH;
+            double y = (c.getImag() + FRACTAL_SCALE / 2) * SCREEN_HEIGHT;
+            if (isMandelbrot(c)) {
+                g2d.setColor(Color.BLUE);
+                //gc.setFill(Color.BLUE);
+            } else {
+                int code = (int) Math.abs(count / 1000.0);
+                g2d.setColor(new Color(code, code, code, 1));
+                // gc.setFill();
             }
-        }));
-        timer.setCycleCount(Timeline.INDEFINITE);
-        timer.play();
+            g2d.fillOval(x, x, 1.0, 1.0);
+            gc.fillOval(x, y, 2, 2);
+        } else {
+            System.out.println("stoped");
+        }
+        */
+
+        File file = new File("myimage.png");
+
+        try {
+            ImageIO.write(bufferedImage, "png", file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Time : " + (System.currentTimeMillis() - Main.startTime));
     }
 
-    public boolean isMandelbrot(Complex c){
+    private Image createImage() {
+        bufferedImage = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g = bufferedImage.createGraphics();
+
+
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i <= SCREEN_HEIGHT; i++) {
+            for (int j = 0; j <= SCREEN_WIDTH; j++) {
+                if(i<255 && j<255) g.setColor(new Color(i,j,i));
+                g.fillOval(i+10,j+10,2,2);
+            }
+        }
+
+        WritableImage image = SwingFXUtils.toFXImage(bufferedImage, null);
+        g.dispose();
+        return image;
+    }
+
+    public boolean isMandelbrot(Complex c) {
         count = 1000;
-        Complex zN = new Complex(0,0);
-        while(count-- >0){
-            zN = Complex.addComplex(Complex.squareComplex(zN),c);
-            if(zN.getAbolute() > 4){
+        Complex zN = new Complex(0, 0);
+        while (count-- > 0) {
+            zN = Complex.addComplex(Complex.squareComplex(zN), c);
+            if (zN.getAbolute() > 4) {
                 return false;
             }
         }

@@ -1,12 +1,52 @@
 package sample;
 
 public class Complex {
+
+    private int xPixelCordinate;
+    private int yPixelCordinate;
+    private double scale;
     private double real;
     private double imag;
+
+    public Complex(int xPixelCordinate, int yPixelCordinate) {
+        this.xPixelCordinate = xPixelCordinate;
+        this.yPixelCordinate = yPixelCordinate;
+        this.scale = scale;
+    }
 
     public Complex(double real, double imag) {
         this.real = real;
         this.imag = imag;
+    }
+
+    public Complex(int xPixelCordinate, int yPixelCordinate, double scale) {
+        this.xPixelCordinate = xPixelCordinate;
+        this.yPixelCordinate = yPixelCordinate;
+        this.scale = scale;
+    }
+
+    public int getxPixelCordinate() {
+        return xPixelCordinate;
+    }
+
+    public void setxPixelCordinate(int xPixelCordinate) {
+        this.xPixelCordinate = xPixelCordinate;
+    }
+
+    public int getyPixelCordinate() {
+        return yPixelCordinate;
+    }
+
+    public void setyPixelCordinate(int yPixelCordinate) {
+        this.yPixelCordinate = yPixelCordinate;
+    }
+
+    public double getScale() {
+        return scale;
+    }
+
+    public void setScale(double scale) {
+        this.scale = scale;
     }
 
     public double getReal() {
@@ -24,6 +64,7 @@ public class Complex {
     public void setImag(double imag) {
         this.imag = imag;
     }
+
 
     //-----------------------------------------------------//
 
