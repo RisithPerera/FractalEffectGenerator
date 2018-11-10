@@ -16,17 +16,13 @@ import java.util.ArrayList;
 public class Mandelbrot {
 
     Timeline timer;
-    Timeline timer2;
 
-
-    private static  int SCREEN_SIZE = 600;
-    private static final double FRACTAL_SCALE = 0.5;
+    private static  int SCREEN_SIZE = 800;
+    private static final double FRACTAL_SCALE = 0.7;
     private static int count;
 
     private ArrayList<Complex> complexes = new ArrayList<>();
-    private int iterator1 = 0;
-    private int iterator2 = SCREEN_SIZE*SCREEN_SIZE;
-
+    private int iterator = 0;
 
     public Mandelbrot(Stage stage) {
         StackPane pane = new StackPane();
@@ -48,9 +44,9 @@ public class Mandelbrot {
             }
         }
 
-        timer = new Timeline(new KeyFrame(Duration.millis(.1), (ActionEvent event) -> {
-            if(iterator1++ < SCREEN_SIZE*SCREEN_SIZE){
-                Complex c = complexes.get(iterator1);
+        timer = new Timeline(new KeyFrame(Duration.millis(0.1), (ActionEvent event) -> {
+            if(iterator++ < SCREEN_SIZE*SCREEN_SIZE){
+                Complex c = complexes.get(iterator);
                 double x = (c.getReal()+FRACTAL_SCALE/2)*SCREEN_SIZE;
                 double y = (c.getImag()+FRACTAL_SCALE/2)*SCREEN_SIZE;
                 if(isMandelbrot(c)){
@@ -59,7 +55,7 @@ public class Mandelbrot {
                     double code = Math.abs(count/1000.0);
                     gc.setFill(new Color(code,code,code,1));
                 }
-                gc.fillOval(x, y,1,1);
+                gc.fillOval(x, y,2,2);
             }else{
                 System.out.println("stoped");
                 timer.stop();
@@ -67,28 +63,6 @@ public class Mandelbrot {
         }));
         timer.setCycleCount(Timeline.INDEFINITE);
         timer.play();
-
-        //---------------------------------------------------------------------------------------//
-        timer2 = new Timeline(new KeyFrame(Duration.millis(.1), (ActionEvent event) -> {
-            if(iterator2-- > 0){
-                Complex c = complexes.get(iterator2);
-                double x = (c.getReal()+FRACTAL_SCALE/2)*SCREEN_SIZE;
-                double y = (c.getImag()+FRACTAL_SCALE/2)*SCREEN_SIZE;
-                if(isMandelbrot(c)){
-                    gc.setFill(Color.YELLOW);
-                }else{
-                    double code = Math.abs(count/1000.0);
-                    gc.setFill(new Color(code/2,code/2,code,1));
-                }
-                gc.fillOval(x, y,1,1);
-            }else{
-                System.out.println("stoped");
-                timer2.stop();
-            }
-        }));
-        timer2.setCycleCount(Timeline.INDEFINITE);
-        timer2.play();
-
     }
 
     public boolean isMandelbrot(Complex c){
