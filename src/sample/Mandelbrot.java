@@ -2,10 +2,14 @@ package sample;
 
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Box;
 import javafx.stage.Stage;
 
 
@@ -18,58 +22,68 @@ import java.util.ArrayList;
 
 public class Mandelbrot {
 
-    private static final int SCREEN_HEIGHT = 800;
     private static final int SCREEN_WIDTH = 800;
-    private static final double FRACTAL_SCALE = 1;
-    private static int count;
+    private static final int SCREEN_HEIGHT = 800;
+
+    private static final double SCALE_WIDTH = 2;
+    private static final double SCALE_HEIGHT = 2;
+
+    private static final int NUM_OF_ITERATIONS = 1000;
     private BufferedImage bufferedImage;
 
-    private ArrayList<Complex> complexes = new ArrayList<>();
-    private int iterator = 0;
+    private ArrayList<Pixel> pixels = new ArrayList<>();
 
     public Mandelbrot(Stage stage) {
+        Button playBtn = new Button("Play");
+        playBtn.setPrefHeight(30);
+        playBtn.setPrefWidth(50);
+        Button pauseBtn = new Button("Pause");
+        pauseBtn.setPrefHeight(30);
+        pauseBtn.setPrefWidth(50);
+        Button stopBtn = new Button("Stop");
+        stopBtn.setPrefHeight(30);
+        stopBtn.setPrefWidth(50);
 
-        StackPane root = new StackPane();
+        HBox btnHBox = new HBox(pauseBtn,playBtn,stopBtn);
+        btnHBox.setSpacing(10);
+        btnHBox.setLayoutX(14);
+        btnHBox.setLayoutY(14);
+
+        Pane controlPanel = new Pane();
+        controlPanel.setPrefWidth(200);
+        controlPanel.getChildren().add(btnHBox);
+
+        Pane resultPanel = new Pane();
+        resultPanel.setPrefHeight(SCREEN_HEIGHT);
+        resultPanel.setPrefWidth(SCREEN_WIDTH);
+
+        HBox root = new HBox();
+        root.getChildren().addAll(controlPanel,resultPanel);
 
         Scene scene = new Scene(root);
         stage.setTitle("Fractal Effect Generator");
+        stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
 
-        root.setStyle("-fx-background-color: black");
-        root.getChildren().add(new ImageView(createImage()));
-
-        /*
-
-        //Map the pixel point to complex plain
+        //Create pixel array
         for (int i = 0; i <= SCREEN_HEIGHT; i++) {
             for (int j = 0; j <= SCREEN_WIDTH; j++) {
-                double x = ((double) j / SCREEN_WIDTH) - FRACTAL_SCALE / 2;
-                double y = ((double) i / SCREEN_HEIGHT) - FRACTAL_SCALE / 2;
-                complexes.add(new Complex(x, y));
+                pixels.add(new Pixel(j, i));
             }
         }
 
-
-        if (iterator++ < SCREEN_HEIGHT * SCREEN_WIDTH) {
-            Complex c = complexes.get(iterator);
-            double x = (c.getReal() + FRACTAL_SCALE / 2) * SCREEN_WIDTH;
-            double y = (c.getImag() + FRACTAL_SCALE / 2) * SCREEN_HEIGHT;
-            if (isMandelbrot(c)) {
-                g2d.setColor(Color.BLUE);
-                //gc.setFill(Color.BLUE);
-            } else {
-                int code = (int) Math.abs(count / 1000.0);
-                g2d.setColor(new Color(code, code, code, 1));
-                // gc.setFill();
-            }
-            g2d.fillOval(x, x, 1.0, 1.0);
-            gc.fillOval(x, y, 2, 2);
-        } else {
-            System.out.println("stoped");
+        //Map the pixel point to complex plain
+        for (Pixel pixel:pixels) {
+            pixel.setReal(SCALE_WIDTH*(((double) 2*pixel.getCoordinateX() / SCREEN_WIDTH) - 1));
+            pixel.setImag(SCALE_HEIGHT*(((double) 2*pixel.getCoordinateY() / SCREEN_HEIGHT) - 1));
         }
-        */
 
+        resultPanel.setStyle("-fx-background-color: black");
+        //resultPanel.getChildren().add(new ImageView(createImage()));
+
+        //--------------------------------- Create Image File ------------------------------------------//
+        /*
         File file = new File("myimage.png");
 
         try {
@@ -77,6 +91,7 @@ public class Mandelbrot {
         } catch (IOException e) {
             e.printStackTrace();
         }
+*/
         System.out.println("Time : " + (System.currentTimeMillis() - Main.startTime));
     }
 
@@ -85,13 +100,20 @@ public class Mandelbrot {
 
         Graphics2D g = bufferedImage.createGraphics();
 
-
-        long startTime = System.currentTimeMillis();
-        for (int i = 0; i <= SCREEN_HEIGHT; i++) {
-            for (int j = 0; j <= SCREEN_WIDTH; j++) {
-                if(i<255 && j<255) g.setColor(new Color(i,j,i));
-                g.fillOval(i+10,j+10,2,2);
+        //Check Pixels
+        for (Pixel pixel : pixels){
+            if(isMandelbrot(pixel)){
+                g.setColor(Color.black);
+            }else{
+                //int color = pixel.getIteration()*255/NUM_OF_ITERATIONS;
+                int i = pixel.getIteration();
+                if(i>100 && i<200){
+                    g.setColor(Color.BLUE);
+                }else{
+                    g.setColor(Color.DARK_GRAY);
+                }
             }
+            g.drawRect(pixel.getCoordinateX(),pixel.getCoordinateY(),1,1);
         }
 
         WritableImage image = SwingFXUtils.toFXImage(bufferedImage, null);
@@ -99,15 +121,18 @@ public class Mandelbrot {
         return image;
     }
 
-    public boolean isMandelbrot(Complex c) {
-        count = 1000;
+    public boolean isMandelbrot(Pixel pixel) {
+        int count = NUM_OF_ITERATIONS;
         Complex zN = new Complex(0, 0);
+        Complex c = new Complex(pixel.getReal(),pixel.getImag());
         while (count-- > 0) {
-            zN = Complex.addComplex(Complex.squareComplex(zN), c);
-            if (zN.getAbolute() > 4) {
+            zN = zN.getThirdComplex().addComplex(c);
+            if (zN.getSquareAbsolute() > 4) {
+                pixel.setIteration(count);
                 return false;
             }
         }
+        pixel.setIteration(count);
         return true;
     }
 }
