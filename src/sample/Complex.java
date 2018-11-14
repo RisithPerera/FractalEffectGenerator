@@ -1,5 +1,9 @@
 package sample;
 
+/*
+    This class keeps the real and imaginary part of a complex number
+    And some bunch of functions related to complex number arithmetic
+ */
 public class Complex {
     private double real;
     private double imag;
@@ -17,12 +21,22 @@ public class Complex {
         return imag;
     }
 
-    //----------------------- Complex Function ------------------------------//
+    public void setReal(double real) {
+        this.real = real;
+    }
 
+    public void setImag(double imag) {
+        this.imag = imag;
+    }
+
+    //--------------- Complex Function --------------------//
+
+    // Return the square absolute value of the complex number
     public double getSquareAbsolute(){
         return Math.pow(real,2)+Math.pow(imag,2);
     }
 
+    // Return any power of a given complex number
     public Complex getComplexPower(int power){
         double newReal = this.real;
         double newImag = this.imag;
@@ -35,6 +49,7 @@ public class Complex {
         return new Complex(newReal,newImag);
     }
 
+    // Add two complex number and return new Object
     public Complex addComplex(Complex number){
         return new Complex(this.real+number.real,this.imag+number.imag);
     }
