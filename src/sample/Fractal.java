@@ -19,16 +19,21 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
+enum FractalType{
+    MANDELBROT, JULIA
+}
+
 public class Fractal extends Application {
 
     private static final int SCREEN_WIDTH = 600;
     private static final int SCREEN_HEIGHT = 600;
     private static final int NUM_OF_ITERATIONS = 100;
+    private static final int NUM_OF_THREADS = 4;
 
     private static double SCALE_WIDTH = 1;
     private static double SCALE_HEIGHT = 1;
     private static int EQU_POWER = 2;
-
+    private static FractalType fractalType = FractalType.MANDELBROT;
     private BufferedImage bufferedImage;
     private Complex cJulia = new Complex(-0.4,0.6);
     private ArrayList<Color> colors = new ArrayList<>();
@@ -40,6 +45,7 @@ public class Fractal extends Application {
     @Override
     public void start(Stage stage) {
         Label equationLbl = new Label("Equation Power");
+        equationLbl.setStyle("-fx-font-size: 14; -fx-text-fill: white;");
         equSlider = new Slider(2,5,0);
         equSlider.setShowTickLabels(true);
         equSlider.setShowTickMarks(true);
@@ -51,6 +57,7 @@ public class Fractal extends Application {
         equVBox.setSpacing(10);
 
         Label magnifyLbl = new Label("Magnification");
+        magnifyLbl.setStyle("-fx-font-size: 14; -fx-text-fill: white;");
         magSlider = new Slider(0.5,2,1);
         magSlider.setShowTickLabels(true);
         magSlider.setShowTickMarks(true);
@@ -62,16 +69,14 @@ public class Fractal extends Application {
         magVBox.setSpacing(10);
 
         timeLbl = new Label();
-        ProgressBar progressBar = new ProgressBar();
-        progressBar.setProgress(0.5);
-        progressBar.setMaxWidth(Double.MAX_VALUE);
+        timeLbl.setStyle("-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: white;");
 
         VBox controlPanel = new VBox();
         controlPanel.setPrefWidth(200);
-        controlPanel.getChildren().addAll(equVBox,magVBox,progressBar,timeLbl);
+        controlPanel.getChildren().addAll(equVBox,magVBox,timeLbl);
         controlPanel.setSpacing(30);
         controlPanel.setPadding(new Insets(10,10,10,10));
-        controlPanel.setStyle("-fx-background-color: #39899B");
+        controlPanel.setStyle("-fx-background-color: #2B2B2B");
 
         Pane resultPanel = new Pane();
         resultPanel.setPrefHeight(SCREEN_HEIGHT);
@@ -111,6 +116,7 @@ public class Fractal extends Application {
                 }
             }
         });
+
     }
 
     private Image generateFractal() {
@@ -119,23 +125,36 @@ public class Fractal extends Application {
         Graphics2D g = bufferedImage.createGraphics();
 
         //Fractal Loop
-        for (int yCoordinate = 0; yCoordinate <= SCREEN_HEIGHT; yCoordinate++) {
-            for (int xCoordinate = 0; xCoordinate <= SCREEN_WIDTH; xCoordinate++) {
-                double xMapValue = SCALE_WIDTH*(((double) 2*xCoordinate / SCREEN_WIDTH) - 1);
-                double yMapValue = SCALE_HEIGHT*(((double) 2*yCoordinate / SCREEN_HEIGHT) - 1);
-                int iteration = isMandelbrot(new Complex(xMapValue,yMapValue));
-                if(iteration == NUM_OF_ITERATIONS){
-                    g.setColor(Color.BLACK);
-                }else {
-                    int nColors = 16;
-                    for(int i=0;i<nColors;i++){
-                        if(iteration>i*NUM_OF_ITERATIONS/nColors && iteration<=(i+1)*NUM_OF_ITERATIONS/nColors){
-                            g.setColor(colors.get(i));
+        for (int iThread = 0; iThread <= NUM_OF_THREADS; iThread++) {
+            new Thread(() -> {
+                for (int yCoordinate = (iThread*200)+1; yCoordinate <= (iThread+1)*200; yCoordinate++) {
+                    for (int xCoordinate = 0; xCoordinate <= SCREEN_WIDTH; xCoordinate++) {
+                        double xMapValue = SCALE_WIDTH * (((double) 2 * xCoordinate / SCREEN_WIDTH) - 1);
+                        double yMapValue = SCALE_HEIGHT * (((double) 2 * yCoordinate / SCREEN_HEIGHT) - 1);
+                        int iteration = 0;
+                        switch (fractalType) {
+                            case MANDELBROT:
+                                iteration = isMandelbrot(new Complex(xMapValue, yMapValue));
+                                break;
+                            case JULIA:
+                                iteration = isJulia(new Complex(xMapValue, yMapValue));
+                                break;
                         }
+
+                        if (iteration == NUM_OF_ITERATIONS) {
+                            g.setColor(Color.BLACK);
+                        } else {
+                            int nColors = 16;
+                            for (int i = 0; i < nColors; i++) {
+                                if (iteration > i * NUM_OF_ITERATIONS / nColors && iteration <= (i + 1) * NUM_OF_ITERATIONS / nColors) {
+                                    g.setColor(colors.get(i));
+                                }
+                            }
+                        }
+                        g.drawRect(xCoordinate, yCoordinate, 1, 1);
                     }
                 }
-                g.drawRect(xCoordinate,yCoordinate,1,1);
-            }
+            }).start();
         }
 
         WritableImage image = SwingFXUtils.toFXImage(bufferedImage, null);
@@ -184,6 +203,19 @@ public class Fractal extends Application {
     }
 
     public static void main(String[] args) {
+        if(args.length>0) {
+            switch (args[0]) {
+                case "Mandelbrot":
+                    fractalType = FractalType.MANDELBROT;
+                    break;
+                case "Julia":
+                    fractalType = FractalType.JULIA;
+                    break;
+                default:
+                    System.out.println("Wrong Input Arguments");
+                    return;
+            }
+        }
         launch(args);
     }
 }
