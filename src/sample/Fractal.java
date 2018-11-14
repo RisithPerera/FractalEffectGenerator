@@ -28,19 +28,20 @@ public class Fractal extends Application {
     private static final int SCREEN_WIDTH = 600;
     private static final int SCREEN_HEIGHT = 600;
     private static final int NUM_OF_ITERATIONS = 100;
-    private static final int NUM_OF_THREADS = 4;
+    private static final int NUM_OF_THREADS = 10;
 
     private static double SCALE_WIDTH = 1;
     private static double SCALE_HEIGHT = 1;
+    private static long startTime;
     private static int EQU_POWER = 2;
     private static FractalType fractalType = FractalType.MANDELBROT;
+
     private BufferedImage bufferedImage;
+    private Graphics2D graphics;
     private Complex cJulia = new Complex(-0.4,0.6);
     private ArrayList<Color> colors = new ArrayList<>();
     private Label timeLbl;
     private Slider magSlider, equSlider;
-
-    public static long startTime;
 
     @Override
     public void start(Stage stage) {
@@ -122,45 +123,58 @@ public class Fractal extends Application {
     private Image generateFractal() {
         Fractal.startTime = System.currentTimeMillis();
         bufferedImage = new BufferedImage(SCREEN_WIDTH, SCREEN_HEIGHT, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = bufferedImage.createGraphics();
+        graphics = bufferedImage.createGraphics();
 
         //Fractal Loop
-        for (int iThread = 0; iThread <= NUM_OF_THREADS; iThread++) {
-            new Thread(() -> {
-                for (int yCoordinate = (iThread*200)+1; yCoordinate <= (iThread+1)*200; yCoordinate++) {
-                    for (int xCoordinate = 0; xCoordinate <= SCREEN_WIDTH; xCoordinate++) {
-                        double xMapValue = SCALE_WIDTH * (((double) 2 * xCoordinate / SCREEN_WIDTH) - 1);
-                        double yMapValue = SCALE_HEIGHT * (((double) 2 * yCoordinate / SCREEN_HEIGHT) - 1);
-                        int iteration = 0;
-                        switch (fractalType) {
-                            case MANDELBROT:
-                                iteration = isMandelbrot(new Complex(xMapValue, yMapValue));
-                                break;
-                            case JULIA:
-                                iteration = isJulia(new Complex(xMapValue, yMapValue));
-                                break;
-                        }
-
-                        if (iteration == NUM_OF_ITERATIONS) {
-                            g.setColor(Color.BLACK);
-                        } else {
-                            int nColors = 16;
-                            for (int i = 0; i < nColors; i++) {
-                                if (iteration > i * NUM_OF_ITERATIONS / nColors && iteration <= (i + 1) * NUM_OF_ITERATIONS / nColors) {
-                                    g.setColor(colors.get(i));
-                                }
-                            }
-                        }
-                        g.drawRect(xCoordinate, yCoordinate, 1, 1);
-                    }
-                }
-            }).start();
+        int slotHeight = SCREEN_HEIGHT/NUM_OF_THREADS;
+        Thread thread;
+        for(int iThread=0;iThread<NUM_OF_THREADS;iThread++){
+            thread = new Thread(new PaintSlots(iThread*slotHeight,(iThread+1)*slotHeight));
+            thread.start();
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                System.out.println("Something Happened");
+            }
         }
 
         WritableImage image = SwingFXUtils.toFXImage(bufferedImage, null);
-        g.dispose();
+        graphics.dispose();
         timeLbl.setText("Time Elapsed : " + (System.currentTimeMillis() - Fractal.startTime)+"mS");
         return image;
+    }
+
+    // Inner Class //
+    private class PaintSlots implements Runnable{
+        private int lowerBound;
+        private int upperBound;
+
+        public PaintSlots(int lowerBound, int upperBound) {
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+        }
+
+        @Override
+        public void run() {
+            for (int yCoordinate = lowerBound; yCoordinate <= upperBound; yCoordinate++) {
+                for (int xCoordinate = 0; xCoordinate <= SCREEN_WIDTH; xCoordinate++) {
+                    double xMapValue = SCALE_WIDTH * (((double) 2 * xCoordinate / SCREEN_WIDTH) - 1);
+                    double yMapValue = SCALE_HEIGHT * (((double) 2 * yCoordinate / SCREEN_HEIGHT) - 1);
+                    int iteration = isMandelbrot(new Complex(xMapValue, yMapValue));
+                    if (iteration == NUM_OF_ITERATIONS) {
+                        graphics.setColor(Color.BLACK);
+                    } else {
+                        int nColors = 16;
+                        for (int i = 0; i < nColors; i++) {
+                            if (iteration > i * NUM_OF_ITERATIONS / nColors && iteration <= (i + 1) * NUM_OF_ITERATIONS / nColors) {
+                                graphics.setColor(colors.get(i));
+                            }
+                        }
+                    }
+                    graphics.drawRect(xCoordinate, yCoordinate, 1, 1);
+                }
+            }
+        }
     }
 
     public int isMandelbrot(Complex c) {
